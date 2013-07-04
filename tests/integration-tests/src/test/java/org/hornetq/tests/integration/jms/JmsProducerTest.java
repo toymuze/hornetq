@@ -16,7 +16,7 @@ import javax.jms.Message;
 import javax.jms.Queue;
 import javax.naming.NamingException;
 
-import org.hornetq.core.config.Configuration;
+import org.hornetq.jms.server.config.ConnectionFactoryConfiguration;
 import org.hornetq.tests.util.JMSTestBase;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,11 +40,11 @@ public class JmsProducerTest extends JMSTestBase
    }
 
    @Override
-   protected Configuration createDefaultConfig(boolean netty) throws Exception
+   protected void testCaseCfExtraConfig(ConnectionFactoryConfiguration configuration)
    {
-      Configuration config = super.createDefaultConfig(netty);
-
-      return config;
+      configuration.setConfirmationWindowSize(0);
+      configuration.setPreAcknowledge(false);
+      configuration.setBlockOnDurableSend(false);
    }
 
    @Test

@@ -94,32 +94,32 @@ public class JMSTestBase extends ServiceTestBase
     * @throws Exception
     * @throws NamingException
     */
-   protected Queue createQueue(final String name) throws Exception, NamingException
+   protected Queue createQueue(final String queueName) throws Exception, NamingException
    {
-      return createQueue(false, name);
+      return createQueue(false, queueName);
    }
 
-   protected Topic createTopic(final String name) throws Exception, NamingException
+   protected Topic createTopic(final String topicName) throws Exception, NamingException
    {
-      return createTopic(false, name);
+      return createTopic(false, topicName);
    }
 
    /**
     * @throws Exception
     * @throws NamingException
     */
-   protected Queue createQueue(final boolean storeConfig, final String name) throws Exception, NamingException
+   protected Queue createQueue(final boolean storeConfig, final String queueName) throws Exception, NamingException
    {
-      jmsServer.createQueue(storeConfig, name, null, true, "/jms/" + name);
+      jmsServer.createQueue(storeConfig, queueName, null, true, "/jms/" + queueName);
 
-      return (Queue)namingContext.lookup("/jms/" + name);
+      return (Queue)namingContext.lookup("/jms/" + queueName);
    }
 
-   protected Topic createTopic(final boolean storeConfig, final String name) throws Exception, NamingException
+   protected Topic createTopic(final boolean storeConfig, final String topicName) throws Exception, NamingException
    {
-      jmsServer.createTopic(storeConfig, name, "/jms/" + name);
+      jmsServer.createTopic(storeConfig, topicName, "/jms/" + topicName);
 
-      return (Topic)namingContext.lookup("/jms/" + name);
+      return (Topic)namingContext.lookup("/jms/" + topicName);
    }
 
    @Override
@@ -232,10 +232,10 @@ public class JMSTestBase extends ServiceTestBase
     */
    protected void createCF(final List<TransportConfiguration> connectorConfigs, final String... jndiBindings) throws Exception
    {
-      int retryInterval = 1000;
-      double retryIntervalMultiplier = 1.0;
-      int reconnectAttempts = -1;
-      int callTimeout = 30000;
+      final int retryInterval = 1000;
+      final double retryIntervalMultiplier = 1.0;
+      final int reconnectAttempts = -1;
+      final int callTimeout = 30000;
       final boolean ha = false;
       List<String> connectorNames = registerConnectors(server, connectorConfigs);
 
@@ -245,44 +245,17 @@ public class JMSTestBase extends ServiceTestBase
       configuration.setRetryIntervalMultiplier(retryIntervalMultiplier);
       configuration.setCallTimeout(callTimeout);
       configuration.setReconnectAttempts(reconnectAttempts);
-      configuration.setConfirmationWindowSize(0);
-      configuration.setPreAcknowledge(false);
-      configuration.setBlockOnDurableSend(false);
+      testCaseCfExtraConfig(configuration);
       jmsServer.createConnectionFactory(false, configuration, jndiBindings);
+   }
 
-      // jmsServer.createConnectionFactory("ManualReconnectionToSingleServerTest",
-//                                        false,
-//                                        JMSFactoryType.CF,
-//                                        registerConnectors(server, connectorConfigs),
-//                                        null,
-//                                        HornetQClient.DEFAULT_CLIENT_FAILURE_CHECK_PERIOD,
-//                                        HornetQClient.DEFAULT_CONNECTION_TTL,
-//                                        callTimeout,
-//                                        HornetQClient.DEFAULT_CALL_FAILOVER_TIMEOUT,
-//                                        HornetQClient.DEFAULT_CACHE_LARGE_MESSAGE_CLIENT,
-//                                        HornetQClient.DEFAULT_MIN_LARGE_MESSAGE_SIZE,
-//                                        HornetQClient.DEFAULT_COMPRESS_LARGE_MESSAGES,
-// 1,
-//                                        HornetQClient.DEFAULT_CONSUMER_MAX_RATE,
-// 1,
-// 1,
-//                                        HornetQClient.DEFAULT_PRODUCER_MAX_RATE,
-//                                        HornetQClient.DEFAULT_BLOCK_ON_ACKNOWLEDGE,
-// false,
-//                                        HornetQClient.DEFAULT_BLOCK_ON_NON_DURABLE_SEND,
-//                                        HornetQClient.DEFAULT_AUTO_GROUP,
-//                                        HornetQClient.DEFAULT_PRE_ACKNOWLEDGE,
-//                                        HornetQClient.DEFAULT_CONNECTION_LOAD_BALANCING_POLICY_CLASS_NAME,
-// 1, 1,
-//                                        HornetQClient.DEFAULT_USE_GLOBAL_POOLS,
-//                                        HornetQClient.DEFAULT_SCHEDULED_THREAD_POOL_MAX_SIZE,
-//                                        HornetQClient.DEFAULT_THREAD_POOL_MAX_SIZE,
-//                                        retryInterval,
-//                                        retryIntervalMultiplier,
-//                                        HornetQClient.DEFAULT_MAX_RETRY_INTERVAL,
-//                                        reconnectAttempts,
-//                                        HornetQClient.DEFAULT_FAILOVER_ON_INITIAL_CONNECTION,
-//                                        null,
-//                                        jndiBindings);
+   /**
+    * Allows test-cases to set their own options to the {@link ConnectionFactoryConfiguration}
+    * @param configuration
+    */
+   protected void testCaseCfExtraConfig(ConnectionFactoryConfiguration configuration)
+   {
+      // no-op
+
    }
 }
