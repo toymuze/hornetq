@@ -38,24 +38,10 @@ import org.junit.Test;
  */
 public class MessageProducerTest extends JMSTestCase
 {
-   // Constants -----------------------------------------------------
-
-   // Static --------------------------------------------------------
-
-   // Attributes ----------------------------------------------------
-
-   // Constructors --------------------------------------------------
-
-   // Public --------------------------------------------------------
-
    @Test
    public void testSendForeignWithForeignDestinationSet() throws Exception
    {
-      Connection conn = null;
-
-      try
-      {
-         conn = createConnection();
+      Connection conn = createConnection();
 
          Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -76,12 +62,6 @@ public class MessageProducerTest extends JMSTestCase
          Message m = c.receive(1000);
 
          ProxyAssertSupport.assertNotNull(m);
-
-      }
-      finally
-      {
-         conn.close();
-      }
    }
 
    private static class SimpleDestination implements Destination, Serializable

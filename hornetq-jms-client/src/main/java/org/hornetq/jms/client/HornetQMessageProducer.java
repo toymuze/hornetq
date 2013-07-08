@@ -199,7 +199,10 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
       {
          throw new InvalidDestinationException("Not a HornetQ Destination:" + destination);
       }
-
+      if (destination != null && defaultDestination != null)
+      {
+         throw new UnsupportedOperationException("Cannot specify destination if producer has a default destination");
+      }
       message.setJMSDeliveryMode(deliveryMode);
 
       message.setJMSPriority(priority);
