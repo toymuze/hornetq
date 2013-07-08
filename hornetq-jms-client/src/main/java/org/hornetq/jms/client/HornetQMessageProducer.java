@@ -19,7 +19,6 @@ import javax.jms.Destination;
 import javax.jms.IllegalStateException;
 import javax.jms.InvalidDestinationException;
 import javax.jms.JMSException;
-import javax.jms.JMSRuntimeException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
@@ -249,7 +248,7 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
       checkClosed();
       if (completionListener == null)
       {
-         throw new JMSRuntimeException("Invalid completionListener used");
+         throw new IllegalArgumentException("Invalid completionListener used");
       }
       if (destination != null && !(destination instanceof HornetQDestination))
       {
