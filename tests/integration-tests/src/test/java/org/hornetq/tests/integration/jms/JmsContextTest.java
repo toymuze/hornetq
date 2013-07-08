@@ -86,13 +86,13 @@ public class JmsContextTest extends JMSTestBase
       }
    }
 
-   @Test(expected = IllegalArgumentException.class)
+   @Test(expected = JMSRuntimeException.class)
    public void testInvalidSessionModesValueMinusOne()
    {
       context.createContext(-1);
    }
 
-   @Test(expected = IllegalArgumentException.class)
+   @Test(expected = JMSRuntimeException.class)
    public void testInvalidSessionModesValue4()
    {
       context.createContext(4);
@@ -121,9 +121,19 @@ public class JmsContextTest extends JMSTestBase
    }
 
    @Test
+   public void testSetGetClientIdNewContext()
+   {
+      final String id = "123";
+      JMSContext c = context;// createContext();
+      c.setClientID(id);
+      JMSContext c2 = addContext(c.createContext(Session.CLIENT_ACKNOWLEDGE));
+      Assert.assertEquals(id, c2.getClientID());
+   }
+
+   @Test
    public void testGetClientId()
    {
-      JMSContext context2 = context.createContext(Session.AUTO_ACKNOWLEDGE);
+      JMSContext context2 = addContext(context.createContext(Session.AUTO_ACKNOWLEDGE));
       final String id = "ID: " + random.nextInt();
       context.setClientID(id);
       Assert.assertEquals("id's must match because the connection is shared", id, context2.getClientID());

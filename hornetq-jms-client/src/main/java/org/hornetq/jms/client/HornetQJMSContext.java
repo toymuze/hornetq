@@ -48,15 +48,14 @@ public class HornetQJMSContext implements JMSContext
    private final int ackMode;
 
    private final HornetQConnectionForContext connection;
-   private final Session session;
+   private Session session;
    private boolean autoStart = HornetQJMSContext.DEFAULT_AUTO_START;
    private boolean closed;
 
 
-   public HornetQJMSContext(HornetQConnectionForContext connection, Session session, int ackMode)
+   public HornetQJMSContext(HornetQConnectionForContext connection, int ackMode)
    {
       this.connection = connection;
-      this.session = session;
       this.ackMode = ackMode;
    }
 
@@ -71,12 +70,39 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSProducer createProducer()
    {
+      checkSession();
       try
       {
          return new HornetQJMSProducer(this, session.createProducer(null));
       } catch (JMSException e)
       {
          throw new JMSRuntimeException(e.getMessage(), e.getErrorCode(), e);
+      }
+   }
+
+   /**
+    *
+    */
+   private void checkSession()
+   {
+      if (session == null)
+      {
+         synchronized (this)
+         {
+            if (closed)
+               throw new IllegalStateRuntimeException("Context is closed");
+            if (session == null)
+            {
+               try
+               {
+                  session = connection.createSession(ackMode);
+               }
+               catch (JMSException e)
+               {
+                  throw new JMSRuntimeException(e.getMessage(), e.getErrorCode(), e);
+               }
+            }
+         }
       }
    }
 
@@ -181,10 +207,15 @@ public class HornetQJMSContext implements JMSContext
    {
       try
       {
-         session.close();
-         connection.closeFromContext();
-         closed = true;
-      } catch (JMSException e)
+         synchronized (this)
+         {
+            if (session != null)
+               session.close();
+            connection.closeFromContext();
+            closed = true;
+         }
+      }
+      catch (JMSException e)
       {
          throw new JMSRuntimeException(e.getMessage(), e.getErrorCode(), e);
       }
@@ -193,6 +224,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public BytesMessage createBytesMessage()
    {
+      checkSession();
       try
       {
          return session.createBytesMessage();
@@ -205,6 +237,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public MapMessage createMapMessage()
    {
+      checkSession();
       try
       {
          return session.createMapMessage();
@@ -217,6 +250,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public Message createMessage()
    {
+      checkSession();
       try
       {
          return session.createMessage();
@@ -229,6 +263,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public ObjectMessage createObjectMessage()
    {
+      checkSession();
       try
       {
          return session.createObjectMessage();
@@ -241,6 +276,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public ObjectMessage createObjectMessage(Serializable object)
    {
+      checkSession();
       try
       {
          return session.createObjectMessage(object);
@@ -253,6 +289,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public StreamMessage createStreamMessage()
    {
+      checkSession();
       try
       {
          return session.createStreamMessage();
@@ -265,6 +302,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public TextMessage createTextMessage()
    {
+      checkSession();
       try
       {
          return session.createTextMessage();
@@ -277,6 +315,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public TextMessage createTextMessage(String text)
    {
+      checkSession();
       try
       {
          return session.createTextMessage(text);
@@ -289,6 +328,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public boolean getTransacted()
    {
+      checkSession();
       try
       {
          return session.getTransacted();
@@ -307,6 +347,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public void commit()
    {
+      checkSession();
       try
       {
          session.commit();
@@ -319,6 +360,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public void rollback()
    {
+      checkSession();
       try
       {
          session.rollback();
@@ -331,6 +373,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public void recover()
    {
+      checkSession();
       try
       {
          session.recover();
@@ -343,6 +386,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createConsumer(Destination destination)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createConsumer(destination));
@@ -357,6 +401,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createConsumer(Destination destination, String messageSelector)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createConsumer(destination, messageSelector));
@@ -371,6 +416,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createConsumer(Destination destination, String messageSelector, boolean noLocal)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createConsumer(destination, messageSelector, noLocal));
@@ -385,6 +431,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public Queue createQueue(String queueName)
    {
+      checkSession();
       try
       {
          return session.createQueue(queueName);
@@ -397,6 +444,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public Topic createTopic(String topicName)
    {
+      checkSession();
       try
       {
          return session.createTopic(topicName);
@@ -409,6 +457,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createDurableConsumer(Topic topic, String name)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createDurableConsumer(topic, name));
@@ -423,6 +472,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createDurableConsumer(Topic topic, String name, String messageSelector, boolean noLocal)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createDurableConsumer(topic, name, messageSelector, noLocal));
@@ -437,6 +487,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createSharedDurableConsumer(Topic topic, String name)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createSharedDurableConsumer(topic, name));
@@ -451,6 +502,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createSharedDurableConsumer(Topic topic, String name, String messageSelector)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createSharedDurableConsumer(topic, name, messageSelector));
@@ -465,6 +517,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createSharedConsumer(topic, sharedSubscriptionName));
@@ -479,6 +532,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public JMSConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName, String messageSelector)
    {
+      checkSession();
       try
       {
          HornetQJMSConsumer consumer = new HornetQJMSConsumer(this, session.createSharedConsumer(topic, sharedSubscriptionName, messageSelector));
@@ -493,6 +547,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public QueueBrowser createBrowser(Queue queue)
    {
+      checkSession();
       try
       {
          QueueBrowser browser = session.createBrowser(queue);
@@ -507,6 +562,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public QueueBrowser createBrowser(Queue queue, String messageSelector)
    {
+      checkSession();
       try
       {
          QueueBrowser browser = session.createBrowser(queue, messageSelector);
@@ -521,6 +577,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public TemporaryQueue createTemporaryQueue()
    {
+      checkSession();
       try
       {
          return session.createTemporaryQueue();
@@ -533,6 +590,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public TemporaryTopic createTemporaryTopic()
    {
+      checkSession();
       try
       {
          return session.createTemporaryTopic();
@@ -545,6 +603,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public void unsubscribe(String name)
    {
+      checkSession();
       try
       {
          session.unsubscribe(name);
@@ -557,6 +616,7 @@ public class HornetQJMSContext implements JMSContext
    @Override
    public void acknowledge()
    {
+      checkSession();
       if (closed)
          throw new IllegalStateRuntimeException("Context is closed");
       try
@@ -573,6 +633,8 @@ public class HornetQJMSContext implements JMSContext
 
    private synchronized void checkAutoStart() throws JMSException
    {
+      if (closed)
+         throw new IllegalStateRuntimeException("Context is closed");
       if (autoStart)
       {
          connection.start();

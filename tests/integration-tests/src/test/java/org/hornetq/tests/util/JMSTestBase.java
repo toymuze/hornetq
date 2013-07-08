@@ -202,10 +202,11 @@ public class JMSTestBase extends ServiceTestBase
       {
          // no-op
       }
+
       namingContext.close();
       jmsServer.stop();
       server = null;
-
+      cf = null;
       jmsServer = null;
 
       namingContext = null;
@@ -216,10 +217,6 @@ public class JMSTestBase extends ServiceTestBase
 
       super.tearDown();
    }
-
-   // Private -------------------------------------------------------
-
-   // Inner classes -------------------------------------------------
 
    protected void registerConnectionFactory() throws Exception
    {

@@ -8,8 +8,9 @@ import javax.jms.JMSException;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Session;
 
-import org.hornetq.utils.ReferenceCounterUtil;
+import org.hornetq.api.jms.HornetQJMSConstants;
 import org.hornetq.utils.ReferenceCounter;
+import org.hornetq.utils.ReferenceCounterUtil;
 
 public abstract class HornetQConnectionForContextImpl implements HornetQConnectionForContext
 {
@@ -33,19 +34,21 @@ public abstract class HornetQConnectionForContextImpl implements HornetQConnecti
 
    public JMSContext createContext(int sessionMode)
    {
-      Session session;
-      try
+      switch (sessionMode)
       {
-         session = createSession(sessionMode);
+         case Session.AUTO_ACKNOWLEDGE:
+         case Session.CLIENT_ACKNOWLEDGE:
+         case Session.DUPS_OK_ACKNOWLEDGE:
+         case Session.SESSION_TRANSACTED:
+         case HornetQJMSConstants.INDIVIDUAL_ACKNOWLEDGE:
+         case HornetQJMSConstants.PRE_ACKNOWLEDGE:
+            break;
+         default:
+            throw new JMSRuntimeException("Invalid ackmode: " + sessionMode);
       }
-      catch (JMSException e)
-      {
-         throw new JMSRuntimeException(e.getMessage(), e.getErrorCode(), e);
-      }
-
       refCounter.increment();
 
-      return new HornetQJMSContext(this, session, sessionMode);
+      return new HornetQJMSContext(this, sessionMode);
    }
 
    @Override
