@@ -89,6 +89,7 @@ import org.hornetq.core.protocol.core.impl.wireformat.SessionXAStartMessage;
 import org.hornetq.core.remoting.FailureListener;
 import org.hornetq.spi.core.protocol.RemotingConnection;
 import org.hornetq.spi.core.remoting.Connection;
+import org.hornetq.utils.ConfirmationWindowWarning;
 import org.hornetq.utils.IDGenerator;
 import org.hornetq.utils.SimpleIDGenerator;
 import org.hornetq.utils.TokenBucketLimiterImpl;
@@ -193,7 +194,8 @@ final class ClientSessionImpl implements ClientSessionInternal, FailureListener,
 
    private final AtomicInteger concurrentCall = new AtomicInteger(0);
 
-   // Constructors ----------------------------------------------------------------------------
+   private final ConfirmationWindowWarning confirmationWindowWarning;
+   private final Executor confirmationExecutor;
 
    ClientSessionImpl(final ClientSessionFactoryInternal sessionFactory,
                             final String name,
@@ -222,7 +224,7 @@ final class ClientSessionImpl implements ClientSessionInternal, FailureListener,
                             final int version,
                             final Channel channel,
                             final Executor executor,
-                            final Executor flowControlExecutor) throws HornetQException
+                            final Executor flowControlExecutor, final Executor confirmationExecutor) throws HornetQException
    {
       this.sessionFactory = sessionFactory;
 
@@ -283,6 +285,8 @@ final class ClientSessionImpl implements ClientSessionInternal, FailureListener,
       {
          this.channel.setCommandConfirmationHandler(this);
       }
+      this.confirmationExecutor = confirmationExecutor;
+      confirmationWindowWarning = sessionFactory.getConfirmationWindowWarning();
    }
 
    // ClientSession implementation
@@ -2277,5 +2281,34 @@ final class ClientSessionImpl implements ClientSessionInternal, FailureListener,
    public void setStopSignal()
    {
       mayAttemptToFailover = false;
+   }
+
+   @Override
+   public boolean isConfirmationWindowEnabled()
+   {
+      if (confirmationWindowWarning.disabled)
+      {
+         if (!confirmationWindowWarning.warningIssued.get())
+         {
+            HornetQClientLogger.LOGGER.confirmationWindowDisabledWarning();
+            confirmationWindowWarning.warningIssued.set(true);
+         }
+         return false;
+      }
+      return true;
+   }
+
+   @Override
+   public void scheduleConfirmation(final SendAcknowledgementHandler handler, final Message message)
+   {
+     confirmationExecutor.execute(new Runnable()
+   {
+
+      @Override
+      public void run()
+      {
+         handler.sendAcknowledged(message);
+      }
+      });
    }
 }

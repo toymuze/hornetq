@@ -635,4 +635,16 @@ public class DelegatingSession implements ClientSessionInternal
    {
       session.setStopSignal();
    }
+
+   @Override
+   public boolean isConfirmationWindowEnabled()
+   {
+      return session.isConfirmationWindowEnabled();
+   }
+
+   @Override
+   public void scheduleConfirmation(SendAcknowledgementHandler handler, Message msg)
+   {
+      session.scheduleConfirmation(handler, msg);
+   }
 }

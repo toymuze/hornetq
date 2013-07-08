@@ -38,8 +38,7 @@ import org.hornetq.utils.TokenBucketLimiter;
 import org.hornetq.utils.UUIDGenerator;
 
 /**
- * The client-side Producer connectionFactory class.
- *
+ * The client-side Producer.
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
  * @author <a href="mailto:clebert.suconic@jboss.org">Clebert Suconic</a>
  * @author <a href="mailto:ataylor@redhat.com">Andy Taylor</a>
@@ -126,14 +125,14 @@ public class ClientProducerImpl implements ClientProducerInternal
    {
       checkClosed();
 
-      doSend(null, msg, null);
+      doSend(null, msg, null, false);
    }
 
    public void send(final SimpleString address1, final Message msg) throws HornetQException
    {
       checkClosed();
 
-      doSend(address1, msg, null);
+      doSend(address1, msg, null, false);
    }
 
    public void send(final String address1, final Message message) throws HornetQException
@@ -145,7 +144,15 @@ public class ClientProducerImpl implements ClientProducerInternal
    public void send(SimpleString address1, Message message, SendAcknowledgementHandler handler) throws HornetQException
    {
       checkClosed();
-      doSend(address1, message, handler);
+      boolean confirmationWindowEnabled = session.isConfirmationWindowEnabled();
+      if (confirmationWindowEnabled) {
+         doSend(address1, message, handler, true);
+      }
+      else
+      {
+         doSend(address1, message, null, true);
+         session.scheduleConfirmation(handler, message);
+      }
    }
 
    @Override
@@ -201,12 +208,6 @@ public class ClientProducerImpl implements ClientProducerInternal
       return producerCredits;
    }
 
-   // Protected ------------------------------------------------------------------------------------
-
-   // Package Private ------------------------------------------------------------------------------
-
-   // Private --------------------------------------------------------------------------------------
-
    private void doCleanup()
    {
       if (address != null)
@@ -219,10 +220,8 @@ public class ClientProducerImpl implements ClientProducerInternal
       closed = true;
    }
 
-   private
-            void
-            doSend(final SimpleString address1, final Message msg, final SendAcknowledgementHandler handler)
-                                                                                                            throws HornetQException
+   private void doSend(final SimpleString address1, final Message msg, final SendAcknowledgementHandler handler,
+                       final boolean forceAsync) throws HornetQException
    {
       session.startCall();
 
@@ -286,7 +285,9 @@ public class ClientProducerImpl implements ClientProducerInternal
             msgI.putStringProperty(Message.HDR_GROUP_ID, groupID);
          }
 
-         boolean sendBlocking = msgI.isDurable() ? blockOnDurableSend : blockOnNonDurableSend;
+         final boolean sendBlockingConfig = msgI.isDurable() ? blockOnDurableSend : blockOnNonDurableSend;
+         final boolean forceAsyncOverride = handler != null;
+         final boolean sendBlocking = sendBlockingConfig && !forceAsyncOverride;
 
          session.workDone();
 
@@ -305,8 +306,7 @@ public class ClientProducerImpl implements ClientProducerInternal
       }
    }
 
-   private void sendRegularMessage(MessageInternal msgI, boolean sendBlocking, final ClientProducerCredits theCredits,
-                                   SendAcknowledgementHandler handler) throws HornetQException
+   private void sendRegularMessage(final MessageInternal msgI,final boolean sendBlocking, final ClientProducerCredits theCredits,                                  final SendAcknowledgementHandler handler) throws HornetQException
    {
       try
       {

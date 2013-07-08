@@ -89,21 +89,10 @@ public class HornetQConnectionMetaData implements ConnectionMetaData
 
    public Enumeration getJMSXPropertyNames() throws JMSException
    {
-      Vector v = new Vector();
+      Vector<Object> v = new Vector<Object>();
       v.add("JMSXGroupID");
       v.add("JMSXGroupSeq");
       v.add("JMSXDeliveryCount");
       return v.elements();
    }
-
-   // Public --------------------------------------------------------
-
-   // Package protected ---------------------------------------------
-
-   // Protected -----------------------------------------------------
-
-   // Private -------------------------------------------------------
-
-   // Inner classes -------------------------------------------------
-
 }

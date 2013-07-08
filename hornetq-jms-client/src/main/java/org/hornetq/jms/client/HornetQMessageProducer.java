@@ -65,7 +65,6 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
    private long defaultDeliveryDelay = Message.DEFAULT_DELIVERY_DELAY;
 
    private final HornetQDestination defaultDestination;
-
    // Constructors --------------------------------------------------
 
    protected HornetQMessageProducer(final HornetQConnection jbossConn, final ClientProducer producer,
@@ -317,12 +316,6 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
       return "HornetQMessageProducer->" + clientProducer;
    }
 
-   // Package protected ---------------------------------------------
-
-   // Protected -----------------------------------------------------
-
-   // Private -------------------------------------------------------
-
    private void doSend(final Message jmsMessage, final long timeToLive, HornetQDestination destination,
                        CompletionListener completionListener) throws JMSException
    {
@@ -453,13 +446,17 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
 
       try
       {
+         /**
+          * Using a completionListener requires wrapping using a {@link CompletionListenerWrapper},
+          * so we avoid it if we can.
+          */
          if (completionListener != null)
          {
             clientProducer.send(address, coreMessage, new CompletionListenerWrapper(completionListener, jmsMessage));
          }
          else
          {
-          clientProducer.send(address, coreMessage);
+            clientProducer.send(address, coreMessage);
          }
       }
       catch (HornetQException e)

@@ -12,14 +12,21 @@
  */
 
 package org.hornetq.tests.util;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
+import javax.jms.JMSException;
+import javax.jms.JMSProducer;
+import javax.jms.JMSRuntimeException;
+import javax.jms.Message;
 import javax.jms.Queue;
 import javax.jms.Topic;
 import javax.management.MBeanServer;
@@ -35,14 +42,12 @@ import org.hornetq.jms.server.config.impl.ConnectionFactoryConfigurationImpl;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.tests.unit.util.InVMNamingContext;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 /**
  * A JMSBaseTest
- *
  * @author <mailto:clebert.suconic@jboss.org">Clebert Suconic</a>
- *
- *
  */
 public class JMSTestBase extends ServiceTestBase
 {
@@ -56,7 +61,7 @@ public class JMSTestBase extends ServiceTestBase
    protected ConnectionFactory cf;
    protected Connection conn;
    private final Set<JMSContext> contextSet = new HashSet<JMSContext>();
-
+   private final Random random = new Random();
    protected InVMNamingContext namingContext;
 
    protected boolean useSecurity()
@@ -175,7 +180,8 @@ public class JMSTestBase extends ServiceTestBase
    {
       try
       {
-         for (JMSContext jmsContext: contextSet) {
+         for (JMSContext jmsContext : contextSet)
+         {
             jmsContext.close();
          }
       }
@@ -230,7 +236,9 @@ public class JMSTestBase extends ServiceTestBase
     * @param jndiBindings
     * @throws Exception
     */
-   protected void createCF(final List<TransportConfiguration> connectorConfigs, final String... jndiBindings) throws Exception
+   protected void
+            createCF(final List<TransportConfiguration> connectorConfigs, final String... jndiBindings)
+                                                                                                       throws Exception
    {
       final int retryInterval = 1000;
       final double retryIntervalMultiplier = 1.0;
@@ -257,5 +265,48 @@ public class JMSTestBase extends ServiceTestBase
    {
       // no-op
 
+   }
+
+   protected final void sendMessages(JMSContext context, JMSProducer producer, Queue queue, final int total)
+   {
+      try
+      {
+         for (int j = 0; j < total; j++)
+         {
+            StringBuilder sb = new StringBuilder();
+            for (int m = 0; m < 200; m++)
+            {
+               sb.append(random.nextLong());
+            }
+            Message msg = context.createTextMessage(sb.toString());
+            msg.setIntProperty("counter", j);
+            producer.send(queue, msg);
+         }
+      }
+      catch (JMSException cause)
+      {
+         throw new JMSRuntimeException(cause.getMessage(), cause.getErrorCode(), cause);
+      }
+   }
+
+   protected final void receiveMessages(JMSConsumer consumer, final int start, final int msgCount, final boolean ack)
+
+   {
+      try
+      {
+         for (int i = start; i < msgCount; i++)
+         {
+            Message message = consumer.receive(100);
+            Assert.assertNotNull("Expecting a message " + i, message);
+            final int actual = message.getIntProperty("counter");
+            Assert.assertEquals("expected=" + i + ". Got: property['counter']=" + actual, i, actual);
+            if (ack)
+               message.acknowledge();
+         }
+      }
+      catch (JMSException cause)
+      {
+         throw new JMSRuntimeException(cause.getMessage(), cause.getErrorCode(), cause);
+      }
    }
 }
