@@ -537,12 +537,14 @@ public class HornetQServerImpl implements HornetQServer
    {
       stop(failoverOnServerShutdown, false, false);
    }
-   /*
-   * stops the server
-   * @param failoverOnServerShutdown whether we will allow a backup server to become live when the server is stopped normally
-   * @param criticalIOError whether we have encountered an IO error with the journal etc
-   * @param failingBack if true don't set the flag to stop the failback checker
-   */
+
+   /**
+    * Stops the server
+    * @param failoverOnServerShutdown whether we will allow a backup server to become live when the
+    *           server is stopped normally
+    * @param criticalIOError whether we have encountered an IO error with the journal etc
+    * @param failingBack if true don't set the flag to stop the failback checker
+    */
    private void stop(boolean failoverOnServerShutdown, final boolean criticalIOError, boolean failingBack) throws Exception
    {
       if (!failingBack)
