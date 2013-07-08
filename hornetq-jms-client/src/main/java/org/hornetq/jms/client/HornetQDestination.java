@@ -300,6 +300,11 @@ public class HornetQDestination implements Destination, Serializable, Referencea
    {
       if (session != null)
       {
+         if (session.getCoreSession().isClosed())
+         {
+            // Temporary queues will be deleted when the connection is closed.. nothing to be done then!
+            return;
+         }
          if (queue)
          {
             session.deleteTemporaryQueue(this);
