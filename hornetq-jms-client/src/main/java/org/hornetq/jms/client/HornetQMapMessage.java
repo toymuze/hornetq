@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.jms.JMSException;
-import javax.jms.JMSRuntimeException;
 import javax.jms.MapMessage;
 import javax.jms.MessageFormatException;
 
@@ -421,12 +420,12 @@ public final class HornetQMapMessage extends HornetQMessage implements MapMessag
 
       if (name == null)
       {
-         throw new JMSRuntimeException("Name must not be null.");
+         throw new IllegalArgumentException("Name must not be null.");
       }
 
       if (name.equals(""))
       {
-         throw new JMSRuntimeException("Name must not be an empty String.");
+         throw new IllegalArgumentException("Name must not be an empty String.");
       }
    }
 
