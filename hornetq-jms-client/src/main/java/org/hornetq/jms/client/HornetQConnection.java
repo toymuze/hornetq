@@ -22,6 +22,7 @@ import javax.jms.ConnectionMetaData;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.IllegalStateException;
+import javax.jms.InvalidClientIDException;
 import javax.jms.JMSException;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Queue;
@@ -226,7 +227,7 @@ public class HornetQConnection extends HornetQConnectionForContextImpl implement
       {
          if (e.getType() == HornetQExceptionType.DUPLICATE_METADATA)
          {
-            throw new IllegalStateException("clientID=" + clientID + " was already set into another connection");
+            throw new InvalidClientIDException("clientID=" + clientID + " was already set into another connection");
          }
       }
 
