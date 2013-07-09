@@ -173,15 +173,16 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
 
    public void send(final Message message) throws JMSException
    {
-      send(defaultDestination, message, defaultDeliveryMode, defaultPriority, defaultTimeToLive);
+      checkDefaultDestination();
+      doSendx(defaultDestination, message, defaultDeliveryMode, defaultPriority, defaultTimeToLive, null);
    }
 
-   public
-            void
-            send(final Message message, final int deliveryMode, final int priority, final long timeToLive)
-                                                                                                          throws JMSException
+   public void send(final Message message,
+                   final int deliveryMode,
+                   final int priority, final long timeToLive) throws JMSException
    {
-      send(defaultDestination, message, deliveryMode, priority, timeToLive);
+      checkDefaultDestination();
+      doSendx(defaultDestination, message, deliveryMode, priority, timeToLive, null);
    }
 
    public void send(final Destination destination, final Message message) throws JMSException
@@ -194,19 +195,9 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
    {
       checkClosed();
 
-      if (destination != null && !(destination instanceof HornetQDestination))
-      {
-         throw new InvalidDestinationException("Not a HornetQ Destination:" + destination);
-      }
-      if (destination != null && defaultDestination != null)
-      {
-         throw new UnsupportedOperationException("Cannot specify destination if producer has a default destination");
-      }
-      message.setJMSDeliveryMode(deliveryMode);
+      checkDestination(destination);
 
-      message.setJMSPriority(priority);
-
-      doSend(message, timeToLive, (HornetQDestination)destination, null);
+      doSendx((HornetQDestination)destination, message, deliveryMode, priority, timeToLive,  null);
    }
 
    @Override
@@ -231,7 +222,8 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
    public void send(Message message, int deliveryMode, int priority, long timeToLive,
                     CompletionListener completionListener) throws JMSException
    {
-      send(defaultDestination, message, deliveryMode, priority, timeToLive, completionListener);
+      checkDefaultDestination();
+      doSendx(defaultDestination, message, deliveryMode, priority, timeToLive, completionListener);
    }
 
    @Override
@@ -246,19 +238,12 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
                     CompletionListener completionListener) throws JMSException
    {
       checkClosed();
-      if (completionListener == null)
-      {
-         throw new IllegalArgumentException("Invalid completionListener used");
-      }
-      if (destination != null && !(destination instanceof HornetQDestination))
-      {
-         throw new InvalidDestinationException("Not a HornetQ Destination:" + destination);
-      }
 
-      message.setJMSDeliveryMode(deliveryMode);
+      checkCompletionListener(completionListener);
 
-      message.setJMSPriority(priority);
-      doSend(message, timeToLive, (HornetQDestination)destination, completionListener);
+      checkDestination(destination);
+
+      doSendx((HornetQDestination)destination, message, deliveryMode, priority, timeToLive,  completionListener);
    }
 
    // TopicPublisher Implementation ---------------------------------
@@ -278,9 +263,7 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
       send(topic, message);
    }
 
-   public
-            void
-            publish(final Message message, final int deliveryMode, final int priority, final long timeToLive)
+   public void publish(final Message message, final int deliveryMode, final int priority, final long timeToLive)
                                                                                                              throws JMSException
    {
       send(message, deliveryMode, priority, timeToLive);
@@ -289,7 +272,8 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
    public void publish(final Topic topic, final Message message, final int deliveryMode, final int priority,
                        final long timeToLive) throws JMSException
    {
-      send(topic, message, deliveryMode, priority, timeToLive);
+      checkDestination(topic);
+      doSendx((HornetQDestination) topic, message, deliveryMode, priority, timeToLive, null);
    }
 
    // QueueSender Implementation ------------------------------------
@@ -302,7 +286,8 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
    public void send(final Queue queue, final Message message, final int deliveryMode, final int priority,
                     final long timeToLive) throws JMSException
    {
-      send((Destination)queue, message, deliveryMode, priority, timeToLive);
+      checkDestination(queue);
+      doSendx((HornetQDestination) queue, message, deliveryMode, priority, timeToLive, null);
    }
 
    public Queue getQueue() throws JMSException
@@ -317,10 +302,51 @@ public class HornetQMessageProducer implements MessageProducer, QueueSender, Top
    {
       return "HornetQMessageProducer->" + clientProducer;
    }
+   /**
+    * Check if the default destination has been set
+    */
+   private void checkDefaultDestination()
+   {
+      if (defaultDestination == null)
+      {
+         throw new UnsupportedOperationException("Cannot specify destination if producer has a default destination");
+      }
+   }
 
-   private void doSend(final Message jmsMessage, final long timeToLive, HornetQDestination destination,
+   /**
+    * Check if the destination is sent correctly
+    */
+   private void checkDestination(Destination destination) throws InvalidDestinationException
+   {
+      if (destination != null && !(destination instanceof HornetQDestination))
+      {
+         throw new InvalidDestinationException("Not a HornetQ Destination:" + destination);
+      }
+      if (destination != null && defaultDestination != null)
+      {
+         throw new UnsupportedOperationException("Cannot specify destination if producer has a default destination");
+      }
+   }
+
+   private void checkCompletionListener(CompletionListener completionListener)
+   {
+      if (completionListener == null)
+      {
+         throw new IllegalArgumentException("Invalid completionListener used");
+      }
+   }
+
+
+   private void doSendx(HornetQDestination destination, final Message jmsMessage, final int deliveryMode,
+                        final int priority, final long timeToLive,
                        CompletionListener completionListener) throws JMSException
    {
+
+      jmsMessage.setJMSDeliveryMode(deliveryMode);
+
+      jmsMessage.setJMSPriority(priority);
+
+
       if (timeToLive == 0)
       {
          jmsMessage.setJMSExpiration(0);
