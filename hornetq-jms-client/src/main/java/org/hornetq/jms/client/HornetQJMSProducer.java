@@ -70,6 +70,11 @@ public final class HornetQJMSProducer implements JMSProducer
    @Override
    public JMSProducer send(Destination destination, Message message)
    {
+      if (message == null)
+      {
+         throw new MessageFormatRuntimeException("null message");
+      }
+
       try
       {
          if (jmsHeaderCorrelationID != null)

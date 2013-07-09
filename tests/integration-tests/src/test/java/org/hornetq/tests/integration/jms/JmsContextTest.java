@@ -11,6 +11,7 @@ import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
+import javax.jms.MessageFormatRuntimeException;
 import javax.jms.Queue;
 import javax.jms.Session;
 
@@ -39,6 +40,21 @@ public class JmsContextTest extends JMSTestBase
    public void testCreateContext()
    {
       Assert.assertNotNull(context);
+   }
+
+   @Test
+   public void testInvalidMessage()
+   {
+      JMSProducer producer = context.createProducer();
+      try
+      {
+         producer.send(queue1, (Message)null);
+         Assert.fail("null msg");
+      }
+      catch (MessageFormatRuntimeException expected)
+      {
+         // no-op
+      }
    }
 
    @Test
